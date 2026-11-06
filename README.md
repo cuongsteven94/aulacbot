@@ -24,10 +24,12 @@ Giao diện và trải nghiệm được Việt hóa, trong khi các thuật ng�
 
 ## Cài đặt
 
-**File cài sẵn** được build tự động bằng GitHub Actions — vào tab [Actions](../../actions) của repo này, mở lượt build mới nhất và tải ở mục Artifacts:
+**File cài sẵn:** vào trang [Releases](../../releases) của repo này, mở bản phát hành mới nhất và tải ở mục Assets — không cần tài khoản GitHub:
 
-- **Windows:** `AuLacBot-Windows-Installer` (file `.exe`)
-- **Android:** `AuLacBot-Android-APK` (file `.apk`)
+- **Windows:** file `.exe` (bộ cài AuLacBot cho máy tính)
+- **Android:** file `AuLacBot.apk` (app điều khiển trên điện thoại)
+
+Mỗi bản phát hành được GitHub Actions build tự động từ source của đúng phiên bản đó.
 
 **Chạy từ source:** xem hướng dẫn chi tiết trong [HUONG_DAN_CHAY.md](./HUONG_DAN_CHAY.md).
 
