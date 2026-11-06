@@ -3,7 +3,9 @@ name: AuLacBot — build Android APK (.apk)
 # Builds the AuLacBot mobile app (Expo / React Native in openbot/mobile) into an
 # installable APK on a Linux runner with the Android SDK.
 # Run it manually from the Actions tab, or push a version tag (v*) to trigger it.
-# The .apk is uploaded as a workflow artifact named "AuLacBot-Android-APK".
+# The .apk is uploaded as a workflow artifact named "AuLacBot-Android-APK", and
+# on tag runs it is also published (as AuLacBot.apk) to that tag's GitHub
+# Release so anyone can download it without signing in.
 #
 # NOTE: `expo prebuild` signs the release build with the debug key by default, so
 # this APK is for direct/internal installation. For Google Play or consistent
@@ -13,6 +15,9 @@ on:
   workflow_dispatch:
   push:
     tags: ["v*"]
+
+permissions:
+  contents: write
 
 jobs:
   build-android-apk:
@@ -49,3 +54,14 @@ jobs:
           name: AuLacBot-Android-APK
           path: openbot/mobile/android/app/build/outputs/apk/release/*.apk
           if-no-files-found: error
+
+      - name: Prepare APK for release
+        if: github.ref_type == 'tag'
+        run: cp openbot/mobile/android/app/build/outputs/apk/release/app-release.apk AuLacBot.apk
+
+      - name: Publish APK to GitHub Release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: AuLacBot.apk
+          fail_on_unmatched_files: true
