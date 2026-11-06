@@ -1,0 +1,11 @@
+channels:
+  - id: aulacbot
+    name: AuLacBot
+    description: Brief của bạn, và những việc cần bạn xử lý.
+    permitted_agents: [aulacbot]
+    allowed_groups: [all]
+  - id: your-agent
+    name: Your agent
+    description: The same job, run by an agent you bring over AG-UI.
+    permitted_agents: [your-agent]
+    allowed_groups: [all]
