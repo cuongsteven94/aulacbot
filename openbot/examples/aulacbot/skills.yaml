@@ -24,8 +24,8 @@ skills:
   # holds; it reads only the Gmail and Calendar tools the Bot was granted, so these tool refs are what
   # an administrator grants on /admin/plugins/google-workspace for the brief to have anything to read.
   - slug: morning-brief
-    title: Morning brief
-    summary: What needs you today, what can wait, and today's calendar, from your mail and calendar.
+    title: Brief buổi sáng
+    summary: Việc gì cần bạn hôm nay, việc gì chờ được, và lịch hôm nay, lấy từ mail và calendar của bạn.
     instructions: >-
       Call morning_brief. The app shows its result as a card, so do not list the items again. Then
       say, in at most two short sentences, the single most important thing and offer one concrete
@@ -40,17 +40,17 @@ skills:
   # (app/src/components/shell/first-day.tsx, shared/first-day.ts); the skill is what brings the mail
   # and calendar tools to that run, and its instructions apply when somebody picks it from the / menu.
   - slug: first-day
-    title: Get to know you
-    summary: Learn what you do from your recent mail and this week's calendar, and say how it can help.
+    title: Hiểu về bạn
+    summary: Tìm hiểu công việc của bạn từ mail gần đây và lịch tuần này, rồi nói cách em có thể giúp.
     instructions: >-
       Read the person's recent mail with gmail_search_messages and this week's calendar with
       calendar_list_events, opening a message with gmail_read_message only when its subject is not
       enough. Then answer in three parts, with a blank line between them. First, who they are and
       what they do, in plain sentences with no bold or headings and at most 450 characters: their
       work, the people and companies they deal with most, and what is coming up, using only what
-      the tools returned. Second, "How I'll help:" and three bullets, one line each and under 60
-      characters, each tied to something you saw. Third, end with this sentence on its own: "If any
-      of these sound off, just let me know and I'll learn." If mail or calendar is not connected, say
+      the tools returned. Second, "Cách em sẽ giúp:" and three bullets, one line each and under 60
+      characters, each tied to something you saw. Third, end with this sentence on its own: "Nếu có
+      chỗ nào chưa đúng, cứ nói em, em sẽ học lại." If mail or calendar is not connected, say
       which one and that it can be connected on the Connections page, and never guess at what you
       could not read.
     tools:
@@ -59,8 +59,8 @@ skills:
       - google-workspace/calendar_list_events
 
   - slug: reply-to-an-email
-    title: Reply to an email
-    summary: Read a message and draft a reply that goes out only after you approve it.
+    title: Trả lời email
+    summary: Đọc một email và soạn thư trả lời, chỉ gửi đi sau khi bạn duyệt.
     instructions: >-
       Find the message the person means, and if more than one could be it, pick the one that matches
       what they said rather than the newest. Read it whole with gmail_read_message before drafting
@@ -75,8 +75,8 @@ skills:
       - google-workspace/gmail_send_reply
 
   - slug: research-public-web
-    title: Research the public web
-    summary: Search current public sources and write a cited brief.
+    title: Research trên web công khai
+    summary: Tìm các nguồn công khai mới nhất và viết một brief có trích dẫn nguồn.
     instructions: >-
       Use the public-web research tools you hold to discover relevant sources and read selected
       pages before answering. Honor an explicit user choice of another authorized provider. Keep
@@ -89,8 +89,8 @@ skills:
       - "@research/fetch"
 
   - slug: find-a-document
-    title: Find a document
-    summary: Search the connected document sources for a file and read what it says.
+    title: Tìm tài liệu
+    summary: Tìm một file trong các nguồn tài liệu đã kết nối và đọc nội dung của nó.
     instructions: >-
       Find the document the person is asking about before answering anything about its contents.
       Search first, then read the file you found rather than answering from its title. If the search
@@ -102,8 +102,8 @@ skills:
       - google-drive/get_file_metadata
 
   - slug: find-a-notion-page
-    title: Find a Notion page
-    summary: Search Notion for a page and read what it says.
+    title: Tìm trang Notion
+    summary: Tìm một page trong Notion và đọc nội dung của nó.
     instructions: >-
       Find the Notion page the person is asking about before answering anything about its contents.
       Search first, then fetch the page you found rather than answering from its title. If the search
@@ -114,8 +114,8 @@ skills:
       - notion/notion-fetch
 
   - slug: whats-changed
-    title: What changed recently
-    summary: List recently changed documents and say who changed them and when.
+    title: Có gì thay đổi gần đây
+    summary: Liệt kê các tài liệu vừa thay đổi, ai đã sửa và sửa khi nào.
     instructions: >-
       List what has changed recently in the sources you can reach, newest first. Give the document
       name, who last changed it and when, and keep it to the ones that actually moved in the period
@@ -125,8 +125,8 @@ skills:
       - google-drive/get_file_metadata
 
   - slug: who-owns-this
-    title: Who owns this
-    summary: Find who owns a document and when they last touched it.
+    title: Ai sở hữu tài liệu này
+    summary: Tìm chủ sở hữu của một tài liệu và lần cuối họ sửa nó là khi nào.
     instructions: >-
       Identify the owner of the document being asked about, and say when it was last changed. Search
       for the document first if you were given a name rather than a link. If more than one document
@@ -136,8 +136,8 @@ skills:
       - google-drive/get_file_metadata
 
   - slug: check-a-claim
-    title: Check a claim against a source
-    summary: Take a statement and check it against what the documents actually say.
+    title: Kiểm tra một khẳng định với nguồn
+    summary: Lấy một khẳng định và đối chiếu với nội dung thật trong tài liệu.
     instructions: >-
       You are checking a claim, not answering a question. Find the source that would settle it, read
       it, and say one of three things: the source supports the claim, the source contradicts it, or
@@ -155,8 +155,8 @@ skills:
   # so they are not `serverId/toolName` refs and a declaration here would name nothing. Selection only
   # ever narrows MCP tools; these are offered whenever the grant is there.
   - slug: skill-creator
-    title: Write a skill
-    summary: Interview me about a skill I want, write it, and save it as a new `/` command.
+    title: Viết một Skill
+    summary: Phỏng vấn em về Skill em muốn, viết nó, và lưu thành một lệnh `/` mới.
     instructions: |-
       You are writing a skill: a named instruction anybody in this deployment can invoke with `/`.
       Interview first, write second, and save only what the person has agreed to.
@@ -253,8 +253,8 @@ skills:
   # browser, and offered to whichever Bot holds this slug. `tools:` here is intersected with a Bot's
   # MCP GRANTS, so naming them would name nothing. The grant of this skill is the whole gate.
   - slug: bot-creator
-    title: Make a coworker
-    summary: Work out what a new coworker should be, then put it in front of you to create.
+    title: Tạo một coworker
+    summary: Bàn với bạn xem một coworker mới nên làm gì, rồi đưa ra trước mặt bạn để tạo.
     instructions: >-
       You are working out what a new coworker should be, and the interview matters more than the
       speed: what you write becomes standing instructions handed to a model on every turn in every
