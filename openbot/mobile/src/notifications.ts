@@ -23,7 +23,7 @@ export async function registerPush() {
     );
   if (Platform.OS === "android")
     await Notifications.setNotificationChannelAsync("openbot", {
-      name: "OpenBot",
+      name: "AuLacBot",
       importance: Notifications.AndroidImportance.HIGH,
     });
   let permission = await Notifications.getPermissionsAsync();
