@@ -1,0 +1,47 @@
+name: AuLacBot — build Windows installer (.exe)
+
+# Builds the AuLacBot desktop installer (Tauri, NSIS bundle) on a Windows runner.
+# Run it manually from the Actions tab, or push a version tag (v*) to trigger it.
+# The .exe is uploaded as a workflow artifact named "AuLacBot-Windows-Installer".
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build-windows-exe:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install dependencies (openbot + desktop)
+        working-directory: openbot
+        run: |
+          bun install
+          cd desktop
+          bun install
+
+      - name: Prepare internal build version
+        working-directory: openbot
+        run: bun desktop/scripts/desktop-version.ts internal
+
+      - name: Build NSIS installer
+        working-directory: openbot/desktop
+        run: bun run tauri build --config src-tauri/tauri.build-version.conf.json --bundles nsis
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: AuLacBot-Windows-Installer
+          path: openbot/desktop/src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: error

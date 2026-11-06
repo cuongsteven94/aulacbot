@@ -1,0 +1,51 @@
+name: AuLacBot — build Android APK (.apk)
+
+# Builds the AuLacBot mobile app (Expo / React Native in openbot/mobile) into an
+# installable APK on a Linux runner with the Android SDK.
+# Run it manually from the Actions tab, or push a version tag (v*) to trigger it.
+# The .apk is uploaded as a workflow artifact named "AuLacBot-Android-APK".
+#
+# NOTE: `expo prebuild` signs the release build with the debug key by default, so
+# this APK is for direct/internal installation. For Google Play or consistent
+# update signing, configure a real release keystore and signingConfig first.
+
+on:
+  workflow_dispatch:
+  push:
+    tags: ["v*"]
+
+jobs:
+  build-android-apk:
+    runs-on: ubuntu-latest
+    env:
+      EXPO_NO_TELEMETRY: "1"
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Install mobile dependencies
+        working-directory: openbot/mobile
+        run: npm ci
+
+      - name: Generate native Android project
+        working-directory: openbot/mobile
+        run: npx expo prebuild --platform android --non-interactive
+
+      - name: Build release APK
+        working-directory: openbot/mobile/android
+        run: ./gradlew assembleRelease
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: AuLacBot-Android-APK
+          path: openbot/mobile/android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
