@@ -48,6 +48,27 @@ full UI is therefore a separate project, not a setting:
 `upstream/main` into a `sync/upstream-<date>` branch, test, then merge into `aulacbot`
 and tag, e.g. `aulacbot-v0.1_on-f52288f`.
 
+## Windows installer (.exe) — status
+
+Upstream ships a Tauri desktop app (`openbot/desktop`) whose Windows bundle target is
+NSIS: a small `.exe` installer. On first run it fetches the deployment, and it finds or
+installs the container engine itself (on Windows: a per-user Podman MSI on WSL2, no
+admin rights, no manual Docker step for the user).
+
+- Done: installer identity rebranded — `tauri.conf.json` productName/title `AuLacBot`,
+  identifier `app.aulacbot.desktop`, bundle descriptions, and the desktop shell's
+  user-facing strings (commit `baf5825`). Rust internals (machine name, data dirs) are
+  deliberately unchanged.
+- Not done / blocked on a GitHub home for AuLacBot: the desktop app downloads its
+  deployment from `CopilotKit/OpenBot` releases (hardcoded in
+  `desktop/src-tauri/src/deployment_release.rs`) and runs that release's pinned
+  container images. An AuLacBot installer therefore needs (1) a GitHub repo for
+  AuLacBot, (2) release workflows that build/publish the AuLacBot container images
+  and a release tarball (upstream's live in the OpenBot repo, not in this one),
+  (3) repointing that one constant at AuLacBot's releases, and (4) a Windows build
+  (GitHub Actions `windows-latest`, as upstream does, or a Windows PC with Rust+Bun).
+  The .exe cannot be built on a Linux host.
+
 ## Still needed to run for real
 
 - A CopilotKit Intelligence project + key (free hosted tier: 1,000 interactions/month).
