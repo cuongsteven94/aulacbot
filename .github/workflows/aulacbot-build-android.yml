@@ -24,6 +24,13 @@ jobs:
     runs-on: ubuntu-latest
     env:
       EXPO_NO_TELEMETRY: "1"
+      # The app refuses to start without a server URL baked in at build time
+      # (openbot/mobile/src/auth.ts throws at import when it is missing, which
+      # crashed the v0.1.1 APK instantly on open). There is no public AuLacBot
+      # server yet, so this is a placeholder HTTPS origin: the app opens to
+      # the sign-in screen and simply cannot reach a server. Rebuild with the
+      # real deployment URL once one exists.
+      EXPO_PUBLIC_SERVER_URL: "https://localhost"
     steps:
       - uses: actions/checkout@v4
 

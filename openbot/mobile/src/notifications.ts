@@ -22,7 +22,7 @@ export async function registerPush() {
       "Configure the EAS project and APNs/FCM credentials before enabling push.",
     );
   if (Platform.OS === "android")
-    await Notifications.setNotificationChannelAsync("openbot", {
+    await Notifications.setNotificationChannelAsync("aulacbot", {
       name: "AuLacBot",
       importance: Notifications.AndroidImportance.HIGH,
     });
