@@ -6,9 +6,10 @@
 //! the reason for it: the download stays a download rather than becoming part of every installer,
 //! and the deployment can be moved forward on its own without shipping a new app.
 //!
-//! What is fetched is the release's own source tarball, at a tag. Not `main`: an app that pulls
-//! whatever is on a branch this morning is not a version anybody can be given, and the images the
-//! stack runs are pinned per release, so the tree that names them has to be pinned too.
+//! What is fetched is a release asset this project's own pipeline publishes at a deployment
+//! tag. Not `main`: an app that pulls whatever is on a branch this morning is not a version
+//! anybody can be given, and the images the stack runs are pinned per release, so the tree
+//! that names them has to be pinned too.
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -36,17 +37,26 @@ pub struct Installed {
     pub layout: Vec<String>,
 }
 
-/// The tarball GitHub publishes for a tag.
+/// The deployment tarball our own release pipeline publishes for a version.
 ///
-/// A release asset rather than a branch, and https rather than git, so nothing needs a git client
-/// or credentials to get a deployment.
+/// A release asset rather than GitHub's archive of the tag: in this repository the deployment
+/// tree lives under `openbot/`, while an archive of the tag would carry the whole repository
+/// with that folder on top, and the unpacker wants the deployment's own entries at the top.
+/// The pipeline that cuts a `deploy-*` release builds the tarball from `openbot/` so its layout
+/// is the deployment's. Https rather than git, so nothing needs a git client or credentials
+/// to get a deployment.
 pub fn tarball_url(version: &str) -> String {
-    format!("https://github.com/CopilotKit/OpenBot/archive/refs/tags/{version}.tar.gz")
+    format!(
+        "https://github.com/cuongsteven94/aulacbot/releases/download/{version}/{DEPLOYMENT}"
+    )
 }
+
+/// The release asset that carries the deployment tree.
+const DEPLOYMENT: &str = "aulacbot-deployment.tar.gz";
 
 /// Where the release publishes its image manifest.
 pub fn images_url(version: &str) -> String {
-    format!("https://github.com/CopilotKit/OpenBot/releases/download/{version}/{IMAGES}")
+    format!("https://github.com/cuongsteven94/aulacbot/releases/download/{version}/{IMAGES}")
 }
 
 pub fn images_path(root: &Path) -> PathBuf {
@@ -425,10 +435,14 @@ mod tests {
     }
 
     #[test]
-    fn the_tarball_is_a_tag_rather_than_a_branch() {
-        let url = tarball_url("v0.0.7");
-        assert!(url.contains("/refs/tags/v0.0.7"), "{url}");
-        assert!(!url.contains("/heads/"), "a branch is not a version: {url}");
+    fn the_tarball_is_a_release_asset_of_the_same_version() {
+        let url = tarball_url("deploy-v0.0.7");
+        assert!(url.contains("/releases/download/deploy-v0.0.7/"), "{url}");
+        assert!(url.ends_with("aulacbot-deployment.tar.gz"), "{url}");
+        assert!(
+            !url.contains("/archive/"),
+            "a tag archive carries the repository, not the deployment: {url}"
+        );
         assert!(
             url.starts_with("https://"),
             "must not need a git client: {url}"
