@@ -716,7 +716,7 @@ pub fn compose(
 
     // Which package the deployment runs. Without it the server falls back rather than using the one
     // that came with the deployment, and the Bots somebody was given are not the Bots they get.
-    env.insert("TENANT_PACKAGE_DIR".into(), "../examples/fintech".into());
+    env.insert("TENANT_PACKAGE_DIR".into(), "../examples/aulacbot".into());
 
     // The one person, named. `OPENBOT_SINGLE_USER` says there is nobody else; this says who that
     // somebody is, so the routes that ask what an actor may do have an actor to answer about.
@@ -1497,7 +1497,7 @@ HTTPS_PROXY=http://proxy:8080
         );
         assert_eq!(
             env.get("TENANT_PACKAGE_DIR").map(String::as_str),
-            Some("../examples/fintech")
+            Some("../examples/aulacbot")
         );
     }
 

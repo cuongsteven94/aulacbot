@@ -7419,7 +7419,7 @@ fn main() {
         .unwrap();
         assert_eq!(
             settings.get("TENANT_PACKAGE_DIR").map(String::as_str),
-            Some("../examples/fintech")
+            Some("../examples/aulacbot")
         );
         let bundled_url = settings
             .get("MANAGED_AGENT_AG_UI_URL")
@@ -7471,7 +7471,7 @@ fn main() {
             serde_json::json!({
                 "case":case, "composeUp":up, "commands":commands, "intentionalMigrationBarrier":true,
                 "publicSettings":settings,
-                "defaultPackage":"../examples/fintech", "remoteEndpointPersistedAndConsumed":asked,
+                "defaultPackage":"../examples/aulacbot", "remoteEndpointPersistedAndConsumed":asked,
                 "actualAskIpcResponse":asked.then_some("D53-BYO-REMOTE-ANSWER"),
                 "noHostStartup":true, "nativeGui":false, "realEngineOrDatabase":false,
             })
