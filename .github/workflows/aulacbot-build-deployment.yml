@@ -89,7 +89,9 @@ jobs:
           cache-to: type=gha,mode=max,scope=${{ matrix.key }}
 
       # The digest travels as a file: a matrix job's outputs are not addressable
-      # by the job that assembles the manifest.
+      # by the job that assembles the manifest. The file is named for its image,
+      # because the manifest job merges all nineteen parts into one directory
+      # and same-named files would overwrite each other there.
       - name: Record the digest
         env:
           DIGEST: ${{ steps.push.outputs.digest }}
@@ -102,13 +104,13 @@ jobs:
                 --arg repository "ghcr.io/${{ env.GHCR_OWNER }}/$REPO" \
                 --arg digest "$DIGEST" \
                 '{key: $key, repository: $repository, digest: $digest,
-                  reference: ($repository + "@" + $digest)}' > part.json
-          cat part.json
+                  reference: ($repository + "@" + $digest)}' > "part-$KEY.json"
+          cat "part-$KEY.json"
 
       - uses: actions/upload-artifact@v4
         with:
           name: image-part-${{ matrix.key }}
-          path: part.json
+          path: part-${{ matrix.key }}.json
           retention-days: 7
 
   release:
