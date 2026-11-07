@@ -150,22 +150,40 @@ jobs:
       # The tarball wraps the openbot/ tree in one top-level folder: the desktop
       # unpacker strips the first path component of every entry, then keeps only
       # the deployment's own entries (docker-compose.yml, server, app, worker,
-      # patches, shared, ...). The tenant defaults are pointed at the AuLacBot
-      # package here, at packaging time, so the shipped tree runs AuLacBot even
-      # where a fallback default is read instead of the desktop-written .env.
+      # patches, shared, ...). Split into named steps so a failure says which
+      # part of the packaging broke.
+      - name: Stage the deployment tree
+        run: |
+          set -euo pipefail
+          stage="$RUNNER_TEMP/aulacbot-deployment"
+          mkdir -p "$stage"
+          cp -a openbot/. "$stage/"
+          echo "STAGE_DIR=$stage" >> "$GITHUB_ENV"
+          du -sh "$stage"
+
+      # The tenant defaults are pointed at the AuLacBot package here, at
+      # packaging time, so the shipped tree runs AuLacBot even where a fallback
+      # default is read instead of the desktop-written .env.
+      - name: Point staged tenant defaults at AuLacBot
+        run: |
+          set -euo pipefail
+          for f in server/src/config.ts scripts/start.sh .env.example; do
+            sed -i 's#\.\./examples/openduet#../examples/aulacbot#g' "$STAGE_DIR/$f"
+            grep -q 'examples/aulacbot' "$STAGE_DIR/$f"
+            if grep -q 'examples/openduet' "$STAGE_DIR/$f"; then
+              echo "::error::$f still names the openduet tenant after packaging."
+              exit 1
+            fi
+            echo "$f: tenant default is AuLacBot"
+          done
+
       - name: Package aulacbot-deployment.tar.gz
         run: |
           set -euo pipefail
-          stage="$(mktemp -d)/aulacbot-deployment"
-          mkdir -p "$stage"
-          cp -a openbot/. "$stage/"
-          for f in server/src/config.ts scripts/start.sh .env.example; do
-            sed -i 's#\.\./examples/openduet#../examples/aulacbot#g' "$stage/$f"
-            grep -q 'examples/aulacbot' "$stage/$f"
-            ! grep -q 'examples/openduet' "$stage/$f"
-          done
-          tar -czf aulacbot-deployment.tar.gz -C "$(dirname "$stage")" aulacbot-deployment
-          tar -tzf aulacbot-deployment.tar.gz | head -20
+          tar -czf aulacbot-deployment.tar.gz -C "$RUNNER_TEMP" aulacbot-deployment
+          tar -tzf aulacbot-deployment.tar.gz > "$RUNNER_TEMP/tar-listing.txt"
+          grep -c '^aulacbot-deployment/' "$RUNNER_TEMP/tar-listing.txt"
+          grep -m 5 -E '^aulacbot-deployment/(docker-compose\.yml|patches/)' "$RUNNER_TEMP/tar-listing.txt"
           ls -lh aulacbot-deployment.tar.gz container-images.json
 
       - name: Upload deployment assets as artifacts
