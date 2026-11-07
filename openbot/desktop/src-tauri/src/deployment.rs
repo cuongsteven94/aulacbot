@@ -195,7 +195,11 @@ fn layout() -> Vec<String> {
 pub const REQUIRED: [&str; 4] = ["docker-compose.yml", "server", "app", "worker"];
 
 /// The rest of what a deployment needs, which is not what it is checked for.
-pub const ALSO_COPIED: [&str; 9] = [
+pub const ALSO_COPIED: [&str; 10] = [
+    // The deployment's package.json points bun at patches/@copilotkit%2Flearning@0.0.1.patch
+    // via patchedDependencies. Without the folder, `bun install` stops with "Couldn't find
+    // patch file" — the v0.3.1 deployment failed its Dependencies step for exactly this.
+    "patches",
     "shared",
     // Not a workspace, but the server imports its egress rules from `agent-computer/src` and
     // `scripts/start-local-chrome-computer.ts` its browser runtime. Without it the server exits at
