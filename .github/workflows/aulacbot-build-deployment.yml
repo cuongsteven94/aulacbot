@@ -1,0 +1,191 @@
+name: AuLacBot — build deployment (images + release assets)
+
+# Publishes a self-hosted deployment release for the AuLacBot desktop app:
+# all 19 container images under ghcr.io/cuongsteven94/*, a container-images.json
+# manifest pinning them by digest, and aulacbot-deployment.tar.gz (the openbot/
+# tree laid out at the tar root the desktop unpacker expects). Triggered by a
+# deployment tag (deploy-v*), kept separate from the installer tags (v*) so the
+# desktop's release lookup can tell the two kinds apart by prefix.
+#
+# CopilotKit Intelligence is NOT touched by this pipeline: only the download
+# sources (GitHub releases + GHCR) move to our own account.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Deployment version label (defaults to the ref name)"
+        required: false
+        type: string
+  push:
+    tags: ["deploy-v*"]
+
+permissions:
+  contents: read
+
+env:
+  DEPLOY_VERSION: ${{ inputs.version || github.ref_name }}
+  GHCR_OWNER: cuongsteven94
+
+jobs:
+  images:
+    name: image ${{ matrix.key }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      # One image failing must not hide whether the other eighteen build.
+      fail-fast: false
+      matrix:
+        include:
+          - { key: openbot, repo: openbot, file: Dockerfile }
+          - { key: server, repo: openbot-server, file: server/Dockerfile }
+          - { key: supervisor, repo: openbot-supervisor, file: supervisor/Dockerfile }
+          - { key: agent-computer, repo: openbot-agent-computer, file: agent-computer/Dockerfile }
+          - { key: agent-adk, repo: openbot-agent-adk, file: agent-adk/Dockerfile }
+          - { key: agent-ag2, repo: openbot-agent-ag2, file: agent-ag2/Dockerfile }
+          - { key: agent-agno, repo: openbot-agent-agno, file: agent-agno/Dockerfile }
+          - { key: agent-antigravity, repo: openbot-agent-antigravity, file: agent-antigravity/Dockerfile }
+          - { key: agent-bot, repo: openbot-agent-bot, file: agent-bot/Dockerfile }
+          - { key: agent-claude-sdk, repo: openbot-agent-claude-sdk, file: agent-claude-sdk/Dockerfile }
+          - { key: agent-crewai, repo: openbot-agent-crewai, file: agent-crewai/Dockerfile }
+          - { key: agent-langgraph, repo: openbot-agent-langgraph, file: agent-langgraph/Dockerfile }
+          - { key: agent-langgraph-agui, repo: openbot-agent-langgraph-agui, file: agent-langgraph-agui/Dockerfile }
+          - { key: agent-langroid, repo: openbot-agent-langroid, file: agent-langroid/Dockerfile }
+          - { key: agent-llamaindex, repo: openbot-agent-llamaindex, file: agent-llamaindex/Dockerfile }
+          - { key: agent-mastra, repo: openbot-agent-mastra, file: agent-mastra/Dockerfile }
+          - { key: agent-microsoft, repo: openbot-agent-microsoft, file: agent-microsoft/Dockerfile }
+          - { key: agent-pydantic-ai, repo: openbot-agent-pydantic-ai, file: agent-pydantic-ai/Dockerfile }
+          - { key: agent-strands, repo: openbot-agent-strands, file: agent-strands/Dockerfile }
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: push
+        name: Build and push ${{ matrix.key }}
+        uses: docker/build-push-action@v6
+        with:
+          context: openbot
+          file: openbot/${{ matrix.file }}
+          platforms: linux/amd64
+          push: true
+          tags: ghcr.io/${{ env.GHCR_OWNER }}/${{ matrix.repo }}:${{ env.DEPLOY_VERSION }}
+          build-args: |
+            OPENBOT_BUILD_VERSION=${{ env.DEPLOY_VERSION }}
+            OPENBOT_BUILD_COMMIT=${{ github.sha }}
+            OPENBOT_BUILD_DISTRIBUTION_ID=${{ github.repository }}
+            OPENBOT_BUILD_REPOSITORY=${{ github.repository }}
+            OPENBOT_BUILD_CHANNEL=stable
+          cache-from: type=gha,scope=${{ matrix.key }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.key }}
+
+      # The digest travels as a file: a matrix job's outputs are not addressable
+      # by the job that assembles the manifest.
+      - name: Record the digest
+        env:
+          DIGEST: ${{ steps.push.outputs.digest }}
+          KEY: ${{ matrix.key }}
+          REPO: ${{ matrix.repo }}
+        run: |
+          set -euo pipefail
+          [[ "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          jq -n --arg key "$KEY" \
+                --arg repository "ghcr.io/${{ env.GHCR_OWNER }}/$REPO" \
+                --arg digest "$DIGEST" \
+                '{key: $key, repository: $repository, digest: $digest,
+                  reference: ($repository + "@" + $digest)}' > part.json
+          cat part.json
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: image-part-${{ matrix.key }}
+          path: part.json
+          retention-days: 7
+
+  release:
+    name: deployment release
+    needs: images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: image-part-*
+          path: parts
+          merge-multiple: true
+
+      # Same shape the desktop parses: {version, commit, images: {key: {repository, digest, reference}}}.
+      - name: Write container-images.json
+        env:
+          VERSION: ${{ env.DEPLOY_VERSION }}
+          COMMIT: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          count="$(ls parts/*.json | wc -l | tr -d ' ')"
+          if [ "$count" != "19" ]; then
+            echo "::error::Expected 19 image parts, found $count."
+            exit 1
+          fi
+          jq -s --arg version "$VERSION" --arg commit "$COMMIT" \
+            '{version: $version, commit: $commit,
+              images: (map({(.key): {repository: .repository, digest: .digest,
+                                     reference: .reference}}) | add)}' \
+            parts/*.json > container-images.json
+          cat container-images.json
+
+      # The tarball wraps the openbot/ tree in one top-level folder: the desktop
+      # unpacker strips the first path component of every entry, then keeps only
+      # the deployment's own entries (docker-compose.yml, server, app, worker,
+      # patches, shared, ...). The tenant defaults are pointed at the AuLacBot
+      # package here, at packaging time, so the shipped tree runs AuLacBot even
+      # where a fallback default is read instead of the desktop-written .env.
+      - name: Package aulacbot-deployment.tar.gz
+        run: |
+          set -euo pipefail
+          stage="$(mktemp -d)/aulacbot-deployment"
+          mkdir -p "$stage"
+          cp -a openbot/. "$stage/"
+          for f in server/src/config.ts scripts/start.sh .env.example; do
+            sed -i 's#\.\./examples/openduet#../examples/aulacbot#g' "$stage/$f"
+            grep -q 'examples/aulacbot' "$stage/$f"
+            ! grep -q 'examples/openduet' "$stage/$f"
+          done
+          tar -czf aulacbot-deployment.tar.gz -C "$(dirname "$stage")" aulacbot-deployment
+          tar -tzf aulacbot-deployment.tar.gz | head -20
+          ls -lh aulacbot-deployment.tar.gz container-images.json
+
+      - name: Upload deployment assets as artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: aulacbot-deployment-assets
+          path: |
+            aulacbot-deployment.tar.gz
+            container-images.json
+          if-no-files-found: error
+
+      - name: Publish deployment release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            aulacbot-deployment.tar.gz
+            container-images.json
+          fail_on_unmatched_files: true
+          prerelease: ${{ contains(github.ref_name, 'test') }}
+          body: |
+            AuLacBot deployment ${{ env.DEPLOY_VERSION }} — self-hosted release assets for the
+            desktop app: the deployment tree (aulacbot-deployment.tar.gz) and the image
+            manifest (container-images.json) pinning all 19 images under
+            ghcr.io/cuongsteven94/* by digest.
